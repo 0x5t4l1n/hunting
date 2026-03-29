@@ -31,6 +31,13 @@ This page is automatically updated to recognize everyone who has contributed to 
             <br />
             <sub><b>reginaldalfret</b></sub>
         </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/Vimalraj-R">
+            <img src="https://avatars.githubusercontent.com/u/161675933?v=4" width="100;" alt="Vimalraj-R"/>
+            <br />
+            <sub><b>Vimalraj-R</b></sub>
+        </a>
     </td></tr>
 </table>
 <!-- readme: contributors -end -->
