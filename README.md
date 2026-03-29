@@ -1,4 +1,4 @@
-# Hunting- 🎯
+# Hunting
 
 A comprehensive collection of security testing resources and payloads for bug bounty hunters, penetration testers, and security researchers.
 
