@@ -12,10 +12,10 @@ This page is automatically updated to recognize everyone who has contributed to 
 <table>
 <tr>
     <td align="center">
-        <a href="https://github.com/Stalin-143">
-            <img src="https://avatars.githubusercontent.com/u/161853795?v=4" width="100;" alt="Stalin-143"/>
+        <a href="https://github.com/0x5t4l1n">
+            <img src="https://avatars.githubusercontent.com/u/161853795?v=4" width="100;" alt="0x5t4l1n"/>
             <br />
-            <sub><b>Stalin-143</b></sub>
+            <sub><b>0x5t4l1n</b></sub>
         </a>
     </td>
     <td align="center">
