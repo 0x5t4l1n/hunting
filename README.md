@@ -113,7 +113,7 @@ This repository is for **EDUCATIONAL AND AUTHORIZED TESTING PURPOSES ONLY**. Una
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-**Note**: While this repository is open source under the MIT License, all content is for educational and authorized testing purposes only. Please review our [Legal Disclaimer](./DISCLAIMER.md) before use.
+**Note**: While this repository is open source under the MIT License, all content is for educational and authorized testing purposes only. Please review our [Legal Disclaimer](./DISCLAIMER.md) before use
 
 ---
 
