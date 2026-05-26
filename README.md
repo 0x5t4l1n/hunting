@@ -1,4 +1,6 @@
 # Hunting
+[![Self-Hosted Git](https://img.shields.io/badge/Self--Hosted-Gitea-green?style=flat-square\&logo=gitea\&logoColor=white)](https://git.w4nn4d13.tech/0x5t4l1n/hunting)
+
 
 A comprehensive collection of security testing resources and payloads for bug bounty hunters, penetration testers, and security researchers.
 
