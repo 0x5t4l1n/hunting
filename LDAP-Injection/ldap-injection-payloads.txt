@@ -138,3 +138,45 @@ cn=*,ou=users,dc=*
 (uidNumber>=1000)
 (uidNumber<=5000)
 (createTimestamp>=20200101000000Z)
+
+# Matching rule and OID-based filters
+(userAccountControl:1.2.840.113556.1.4.803:=2)
+(userAccountControl:1.2.840.113556.1.4.803:=512)
+(userAccountControl:1.2.840.113556.1.4.804:=2)
+(primaryGroupID:1.2.840.113556.1.4.803:=512)
+(adminCount:1.2.840.113556.1.4.803:=1)
+
+# Recursive group membership (AD-specific)
+(memberOf:1.2.840.113556.1.4.1941:=CN=Domain Admins,CN=Users,DC=example,DC=com)
+(memberOf:1.2.840.113556.1.4.1941:=CN=Administrators,CN=Builtin,DC=example,DC=com)
+(memberOf:1.2.840.113556.1.4.1941:=CN=Remote Desktop Users,CN=Builtin,DC=example,DC=com)
+
+# Presence and negation chaining
+(&(!(uid=guest))(uid=*))
+(&(!(userPassword=*))(uid=*))
+(|(!(mail=*))(mail=*@corp.local))
+(&(!(accountExpires=0))(accountExpires=*))
+
+# Escaping and encoded character probes
+(\2a)
+(\28)
+(\29)
+(\5c)
+(\00)
+\2a\28\29\5c\00
+
+# Extensible match probes
+(cn:caseExactMatch:=Administrator)
+(uid:caseIgnoreMatch:=admin)
+(mail:caseIgnoreIA5Match:=admin@example.com)
+(displayName:caseIgnoreSubstringsMatch:=adm*)
+
+# Nested boolean branch expansions
+(&(|(uid=admin)(uid=administrator))(!(accountStatus=disabled)))
+(|(&(cn=admin)(!(lockedOut=TRUE)))(&(uid=root)(objectClass=person)))
+(&(|(memberOf=cn=admins*)(memberOf=cn=ops*))(!(pwdAccountLockedTime=*)))
+
+# Data exfiltration-oriented attribute targeting
+(|(description=*)(info=*)(comment=*))
+(&(objectClass=person)(|(telephoneNumber=*)(mobile=*)(homePhone=*)))
+(&(objectClass=user)(|(lastLogon=*)(pwdLastSet=*)(badPwdCount=*)))
