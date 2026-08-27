@@ -1,0 +1,8 @@
+# Duplicate payload test file (intentionally duplicates existing base entries)
+# These lines are copied verbatim from existing repo files to exercise the Duplicate Payload Check.
+
+http://127.0.0.1
+http://localhost
+file:///etc/passwd
+{"__proto__": {"polluted": true}}
+?__proto__[polluted]=true
