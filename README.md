@@ -21,6 +21,7 @@ This repository contains a complete collection of testing payloads organized by 
 - **[Log Injection](./Log-Injection/)** - Log file manipulation
 - **[XML Injection](./XML-Injection/)** - XML and XXE attacks
 - **[Prompt Injection](./Prompt-Injection/)** - AI/LLM prompt manipulation
+- **[Prototype Pollution](./Prototype-Pollution/)** - JavaScript prototype chain injection & impact chains
 
 **Access Control Vulnerabilities:**
 - **[Path Traversal](./Path-Traversal/)** - Directory traversal attacks
