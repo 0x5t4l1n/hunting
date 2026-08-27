@@ -10,10 +10,11 @@ permissions:
 
 jobs:
   duplicate-check:
+    name: Duplicate Payload Check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout base branch (trusted)
+      - name: Checkout base branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.base.sha }}
