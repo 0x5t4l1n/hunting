@@ -1,0 +1,102 @@
+name: Security Advisory Discord Notification
+
+on:
+  repository_advisory:
+    types: [reported, created, published, submitted, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  notify-owners:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ensure Discord webhook is configured
+        id: check_secret
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "::warning::Missing required secret: DISCORD_WEBHOOK. Skipping advisory notification. Add a Discord webhook URL as the DISCORD_WEBHOOK secret in your repository or organization settings."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send Discord notification
+        if: steps.check_secret.outputs.skip == 'false'
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          ADVISORY_TITLE: ${{ github.event.repository_advisory.summary }}
+          ADVISORY_SEVERITY: ${{ github.event.repository_advisory.severity }}
+          ADVISORY_STATE: ${{ github.event.repository_advisory.state }}
+          ADVISORY_CVE: ${{ github.event.repository_advisory.cve_id }}
+          ADVISORY_URL: ${{ github.event.repository_advisory.html_url }}
+          ADVISORY_DESCRIPTION: ${{ github.event.repository_advisory.description }}
+          ADVISORY_ACTION: ${{ github.event.action }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          # Map severity to a Discord embed colour (decimal RGB)
+          case "${ADVISORY_SEVERITY,,}" in
+            critical) COLOR=9831467  ;;  # #960B0B dark red
+            high)     COLOR=15548997 ;;  # #ED4245 red
+            medium)   COLOR=15105570 ;;  # #E67E22 orange
+            low)      COLOR=16776960 ;;  # #FFFF00 yellow
+            *)        COLOR=8421504  ;;  # #808080 grey
+          esac
+
+          # Build optional CVE field entry
+          CVE_FIELD=""
+          if [ -n "$ADVISORY_CVE" ]; then
+            CVE_FIELD=$(jq -n --arg cve "$ADVISORY_CVE" \
+              '{name: "CVE ID", value: $cve, inline: true}')
+            CVE_FIELD=",${CVE_FIELD}"
+          fi
+
+          # Truncate description to Discord's 1024-char field limit
+          DESCRIPTION="${ADVISORY_DESCRIPTION:0:1024}"
+
+          PAYLOAD=$(jq -n \
+            --arg title "🔒 Security Advisory ${ADVISORY_ACTION^} in \`${REPO}\`" \
+            --arg footer_text "GitHub Advisory · ${REPO}" \
+            --arg url "$ADVISORY_URL" \
+            --arg adv_title "$ADVISORY_TITLE" \
+            --arg severity "${ADVISORY_SEVERITY^}" \
+            --arg state "${ADVISORY_STATE^}" \
+            --arg actor "$ACTOR" \
+            --arg description "$DESCRIPTION" \
+            --argjson color "$COLOR" \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                color: $color,
+                fields: [
+                  {name: "Title",       value: $adv_title,   inline: false},
+                  {name: "Severity",    value: $severity,    inline: true},
+                  {name: "State",       value: $state,       inline: true},
+                  {name: "Reported by", value: $actor,       inline: true},
+                  {name: "Description", value: $description, inline: false}
+                ],
+                footer: {text: $footer_text}
+              }]
+            }')
+
+          # Inject optional CVE field before the description field
+          if [ -n "$CVE_FIELD" ]; then
+            PAYLOAD=$(echo "$PAYLOAD" | jq \
+              --argjson cve_field "$CVE_FIELD" \
+              '.embeds[0].fields |= .[:3] + [$cve_field] + .[3:]')
+          fi
+
+          RESPONSE=$(curl -sS -o /tmp/discord_response.txt -w "%{http_code}" \
+            -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          if [ "$RESPONSE" -lt 200 ] || [ "$RESPONSE" -ge 300 ]; then
+            echo "::error::Discord webhook failed (HTTP $RESPONSE): $(cat /tmp/discord_response.txt)"
+            exit 1
+          fi
