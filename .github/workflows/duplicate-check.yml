@@ -6,7 +6,11 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
+
+concurrency:
+  group: duplicate-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   duplicate-check:

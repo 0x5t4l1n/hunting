@@ -1,123 +1,80 @@
-# Hunting
+# OWASP Hunting
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-A comprehensive collection of security testing resources and payloads for bug bounty hunters, penetration testers, and security researchers.
+An open-source security testing and vulnerability research reference for security researchers, penetration testers, bug bounty hunters, and developers. [OWASP Incubator Project](https://owasp.org/projects/hunting).
 
-## 📁 Repository Structure
+![OWASP Hunting banner](.github/assets/banner.png)
 
-### Vulnerability Payloads by Type
-This repository contains a complete collection of testing payloads organized by vulnerability type.
+> A curated reference of testing payloads, attack vectors, and methodology notes — **not** an automated scanner or exploit framework. Nothing here runs against a target on its own.
 
-**Injection Vulnerabilities:**
-- **[SQL Injection](./SQL-Injection/)** - Database query manipulation
-- **[NoSQL Injection](./NoSQL-Injection/)** - NoSQL database injection (MongoDB, Redis, CouchDB)
-- **[XSS (Cross-Site Scripting)](./XSS/)** - Client-side code injection
-- **[Command Injection](./Command-Injection/)** - OS command execution & symbolic link attacks
-- **[SSTI (Server-Side Template Injection)](./SSTI/)** - Template engine exploitation & RCE
-- **[SSJI (Server-Side JavaScript Injection)](./SSJI/)** - Node.js code injection & RCE
-- **[CSV Injection](./CSV-Injection/)** - Formula injection in spreadsheets
-- **[LDAP Injection](./LDAP-Injection/)** - Directory service manipulation
-- **[Log Injection](./Log-Injection/)** - Log file manipulation
-- **[XML Injection](./XML-Injection/)** - XML and XXE attacks
-- **[Prompt Injection](./Prompt-Injection/)** - AI/LLM prompt manipulation
-- **[Prototype Pollution](./Prototype-Pollution/)** - JavaScript prototype chain injection & impact chains
+## What's inside
 
-**Access Control Vulnerabilities:**
-- **[Path Traversal](./Path-Traversal/)** - Directory traversal attacks
-- **[IDOR](./IDOR/)** - Insecure direct object references
-- **[Open Redirect](./Open-Redirect/)** - Unvalidated redirects
+31 vulnerability categories, each a directory with a `README.md` (description, attack vectors, testing approach) and a `*-payloads.txt` file.
 
-**Authentication & Authorization:**
-- **[Authentication Bypass](./Authentication-Bypass/)** - Auth bypass techniques
-- **[Password Reset](./Password-Reset/)** - Password reset vulnerabilities & account takeover
-- **[Weak Passwords](./Weak-Passwords/)** - Common weak passwords and defaults
+<details>
+<summary><strong>Browse all categories</strong></summary>
+<br>
 
-**Server-Side Vulnerabilities:**
-- **[SSRF](./SSRF/)** - Server-side request forgery
-- **[Deserialization](./Deserialization/)** - Insecure deserialization
-- **[File Upload](./File-Upload/)** - Malicious file upload & RCE techniques
-- **[Symbolic Link Attacks](./Symbolic-Link-Attacks/)** - Symlink exploitation & file system attacks
-- **[Timing Attacks](./Timing-Attacks/)** - Side-channel timing analysis & user enumeration
+| Category | Group |
+|---|---|
+| [SQL Injection](./SQL-Injection/) | Injection |
+| [NoSQL Injection](./NoSQL-Injection/) | Injection |
+| [XSS](./XSS/) | Injection |
+| [Command Injection](./Command-Injection/) | Injection |
+| [SSTI](./SSTI/) | Injection |
+| [SSJI](./SSJI/) | Injection |
+| [CSV Injection](./CSV-Injection/) | Injection |
+| [LDAP Injection](./LDAP-Injection/) | Injection |
+| [Log Injection](./Log-Injection/) | Injection |
+| [XML Injection](./XML-Injection/) | Injection |
+| [Prompt Injection](./Prompt-Injection/) | Injection |
+| [Prototype Pollution](./Prototype-Pollution/) | Injection |
+| [Path Traversal](./Path-Traversal/) | Access control |
+| [IDOR](./IDOR/) | Access control |
+| [Open Redirect](./Open-Redirect/) | Access control |
+| [Authentication Bypass](./Authentication-Bypass/) | Auth |
+| [Password Reset](./Password-Reset/) | Auth |
+| [Weak Passwords](./Weak-Passwords/) | Auth |
+| [SSRF](./SSRF/) | Server-side |
+| [Deserialization](./Deserialization/) | Server-side |
+| [File Upload](./File-Upload/) | Server-side |
+| [Symbolic Link Attacks](./Symbolic-Link-Attacks/) | Server-side |
+| [Timing Attacks](./Timing-Attacks/) | Server-side |
+| [Security Misconfiguration](./Security-Misconfiguration/) | Config & design |
+| [CORS Misconfiguration](./CORS-Misconfiguration/) | Config & design |
+| [HTTP Request Smuggling](./HTTP-Request-Smuggling/) | Config & design |
+| [JWT Vulnerabilities](./JWT-Vulnerabilities/) | Config & design |
+| [Business Logic](./Business-Logic/) | Config & design |
+| [Weak Cryptography](./Weak-Cryptography/) | Config & design |
+| [Vulnerable Components](./Vulnerable-Components/) | Config & design |
+| [Tor-Based Attacks](./Tor-Based-Attacks/) | Network |
 
-**Configuration & Design:**
-- **[Security Misconfiguration](./Security-Misconfiguration/)** - Default credentials, misconfigurations
-- **[CORS Misconfiguration](./CORS-Misconfiguration/)** - Cross-origin resource sharing issues
-- **[HTTP Request Smuggling](./HTTP-Request-Smuggling/)** - Request desynchronization attacks
-- **[JWT Vulnerabilities](./JWT-Vulnerabilities/)** - JSON Web Token implementation flaws
-- **[Business Logic](./Business-Logic/)** - Business logic flaws
-- **[Weak Cryptography](./Weak-Cryptography/)** - Weak crypto implementations
-- **[Vulnerable Components](./Vulnerable-Components/)** - Known vulnerable libraries
+</details>
 
-**Network & Anonymity:**
-- **[Tor-Based Attacks](./Tor-Based-Attacks/)** - Tor anonymity exploitation & onion service testing
+## Getting started
 
-## 🎯 Purpose
+```bash
+git clone https://github.com/OWASP/OWASP-Hunting.git
+cd OWASP-Hunting
+cat SQL-Injection/README.md
+grep -r "onerror=" XSS/xss-payloads.txt
+```
 
-This repository serves as a comprehensive reference for security professionals to:
-- Test web applications for common vulnerabilities
-- Learn about different attack vectors
-- Prepare for bug bounty hunting
-- Conduct authorized penetration testing
-- Understand security risks in web applications
+No build or install step — it's plain Markdown and text files. Read a category's `README.md` first; it gives the context the payload list assumes.
 
-## ⚠️ Legal Disclaimer
+## Contributing
 
-**IMPORTANT**: All payloads and techniques in this repository are for **authorized testing only**. 
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** — workflow, payload standards, PR requirements, and the [AI-assisted contribution policy](./CONTRIBUTING.md#ai-assisted-contributions). This project does not run any AI provider internally; the policy covers contributor AI use only.
 
-- ✅ Use on systems you own
-- ✅ Use with explicit written permission
-- ✅ Use in authorized bug bounty programs
-- ✅ Use for educational purposes in controlled environments
-- ❌ **NEVER** use on systems without authorization
+## Responsible use
 
-Unauthorized testing is illegal and unethical. Always follow responsible disclosure practices.
+For **authorized testing only** — systems you own, systems with explicit written permission, in-scope bug bounty programs, or controlled educational labs. Never against systems you're not authorized to test. See [DISCLAIMER.md](./DISCLAIMER.md) for full terms, and [SECURITY.md](./SECURITY.md) to report a security issue in this repo.
 
-## 🚀 Getting Started
+## License
 
-1. Choose the vulnerability type you want to test from the list above
-2. Navigate to the corresponding directory
-3. Review the README.md for context and methodology
-4. Use the payload files in your authorized testing
+MIT — see [LICENSE](./LICENSE). Copyright OWASP.
 
-## 📚 Resources
+## Resources
 
-- [OWASP Top 10 Official](https://owasp.org/www-project-top-ten/)
-- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)
-- [Bug Bounty Platforms](https://www.bugcrowd.com/) | [HackerOne](https://www.hackerone.com/)
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](./CONTRIBUTING.md) before submitting.
-
-Quick guidelines:
-- All content must be legal and ethical
-- Payloads should be well-documented
-- Follow existing structure and patterns
-- Focus on educational value
-
-For detailed information on how to contribute, see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## 🏆 Contributors
-
-A huge thank you to all our amazing contributors! This project wouldn't be possible without your support. 🙏
-
-See our [**Contributors Hall of Fame**](./CONTRIBUTORS.md) to view all contributors with their GitHub profiles!
-
-All contributors are automatically recognized and added to our hall of fame when they contribute to this repository. ✨
-
-## ⚖️ Legal Disclaimer
-
-**IMPORTANT**: Read our [Legal Disclaimer](./DISCLAIMER.md) before using any content from this repository.
-
-This repository is for **EDUCATIONAL AND AUTHORIZED TESTING PURPOSES ONLY**. Unauthorized access to computer systems is illegal.
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**Note**: While this repository is open source under the MIT License, all content is for educational and authorized testing purposes only. Please review our [Legal Disclaimer](./DISCLAIMER.md) before use
-
----
-
-**Happy Hunting! 🎯 Stay Ethical. Stay Legal.**
-
+[Official project page](https://owasp.org/projects/hunting) · [OWASP Top 10](https://owasp.org/www-project-top-ten/) · [OWASP API Security Top 10](https://owasp.org/API-Security/editions/2023/en/0x00-header/) · [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/)

@@ -1,0 +1,83 @@
+# Config for actions/labeler@v6 — https://github.com/actions/labeler
+#
+# Reuses existing repository labels; does not create new ones at runtime.
+# Labels used here ("new-payload", "new-category", "documentation") already
+# exist in the repo. "maintenance" does not exist yet and must be created
+# manually — see CONTRIBUTING.md.
+#
+# "duplicate" is intentionally NOT configured here. It is applied/removed
+# only by the Duplicate Payload Check workflow when it actually detects a
+# duplicate payload — never from file paths alone (see scripts/check_duplicates.py).
+#
+# "needs-review" is also intentionally not configured here: every PR needs
+# review regardless of which files it touches, so there is no file-path
+# signal that reliably determines it. Left to maintainers.
+
+# A PR that adds or edits a payload data file.
+new-payload:
+  - changed-files:
+      - any-glob-to-any-file: "*/*.txt"
+
+# Any documentation change: the top-level README/CONTRIBUTING/DISCLAIMER/
+# SECURITY, or any category README.
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.md"
+
+# Changes to CI workflows or repository automation/tooling.
+maintenance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/labeler.yml"
+          - "scripts/**"
+          - ".gitignore"
+
+# A PR that introduces a new top-level category directory.
+#
+# This works by exclusion: it matches only when EVERY changed file sits one
+# level under a top-level directory (any-glob-to-any-file: '*/*') AND none of
+# those files fall under a directory already known to exist
+# (all-globs-to-all-files: '!<existing-dir>/**' for each one).
+#
+# Maintenance note: when a new category is merged, add its directory to the
+# exclusion list below. Otherwise, later unrelated edits to that category
+# will keep matching this rule.
+new-category:
+  - all:
+      - changed-files:
+          - any-glob-to-any-file: "*/*"
+          - all-globs-to-all-files:
+              - "!Authentication-Bypass/**"
+              - "!Business-Logic/**"
+              - "!Command-Injection/**"
+              - "!CORS-Misconfiguration/**"
+              - "!CSV-Injection/**"
+              - "!Deserialization/**"
+              - "!File-Upload/**"
+              - "!HTTP-Request-Smuggling/**"
+              - "!IDOR/**"
+              - "!JWT-Vulnerabilities/**"
+              - "!LDAP-Injection/**"
+              - "!Log-Injection/**"
+              - "!NoSQL-Injection/**"
+              - "!Open-Redirect/**"
+              - "!Password-Reset/**"
+              - "!Path-Traversal/**"
+              - "!Prompt-Injection/**"
+              - "!Prototype-Pollution/**"
+              - "!Security-Misconfiguration/**"
+              - "!SQL-Injection/**"
+              - "!SSJI/**"
+              - "!SSRF/**"
+              - "!SSTI/**"
+              - "!Symbolic-Link-Attacks/**"
+              - "!Timing-Attacks/**"
+              - "!Tor-Based-Attacks/**"
+              - "!Vulnerable-Components/**"
+              - "!Weak-Cryptography/**"
+              - "!Weak-Passwords/**"
+              - "!XML-Injection/**"
+              - "!XSS/**"
+              - "!.github/**"
+              - "!scripts/**"
