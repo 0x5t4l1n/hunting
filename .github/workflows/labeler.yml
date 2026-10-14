@@ -1,0 +1,28 @@
+name: PR Labeler
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: labeler-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  label:
+    name: Label pull request
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      # No checkout step: actions/labeler fetches both the list of changed
+      # files and this repo's .github/labeler.yml via the GitHub API, using
+      # the base branch's config — it never reads or executes PR head code.
+      - name: Apply labels based on changed files
+        uses: actions/labeler@v6
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          sync-labels: true
