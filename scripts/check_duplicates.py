@@ -19,6 +19,7 @@ from typing import Dict, Iterable, List, Optional, Tuple
 
 COMMENT_PREFIXES = ("#",)
 TEXT_FILE_SIZE_LIMIT = 2 * 1024 * 1024
+PAYLOAD_FILE_SUFFIX = ".txt"
 
 
 @dataclass(frozen=True)
@@ -124,7 +125,7 @@ def build_base_indexes(repo_root: Path) -> Tuple[Dict[str, List[Location]], Dict
     strict_index: Dict[str, List[Location]] = defaultdict(list)
     ws_index: Dict[str, List[Location]] = defaultdict(list)
 
-    for file_path in repo_root.rglob("*"):
+    for file_path in repo_root.rglob(f"*{PAYLOAD_FILE_SUFFIX}"):
         if not file_path.is_file():
             continue
         if ".git" in file_path.parts:
@@ -188,6 +189,12 @@ def remove_base_occurrences(
             ws_index.pop(key, None)
 
 
+class GithubApiError(RuntimeError):
+    def __init__(self, status_code: int, message: str) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def api_request(url: str, token: str) -> dict:
     req = urllib.request.Request(url)
     req.add_header("Accept", "application/vnd.github+json")
@@ -198,7 +205,23 @@ def api_request(url: str, token: str) -> dict:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"GitHub API request failed ({exc.code}) for {url}: {body}") from exc
+        raise GithubApiError(exc.code, f"GitHub API request failed ({exc.code}) for {url}: {body}") from exc
+
+
+def api_mutate_request(url: str, token: str, method: str, payload: dict) -> dict:
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method=method)
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("Authorization", "Bearer " + token)
+    req.add_header("X-GitHub-Api-Version", "2022-11-28")
+    req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            body = response.read().decode("utf-8")
+            return json.loads(body) if body else {}
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise GithubApiError(exc.code, f"GitHub API request failed ({exc.code}) for {url}: {body}") from exc
 
 
 def paginated_request(url: str, token: str) -> List[dict]:
@@ -266,6 +289,8 @@ def collect_pr_changes(
         status = file_info.get("status")
         filename = file_info.get("filename")
         if not filename:
+            continue
+        if not filename.endswith(PAYLOAD_FILE_SUFFIX):
             continue
         if status not in {"added", "modified", "renamed", "copied", "changed"}:
             continue
@@ -369,6 +394,95 @@ def print_duplicates(duplicates: List[Duplicate]) -> None:
         print()
 
 
+COMMENT_MARKER = "<!-- duplicate-payload-check-bot -->"
+
+
+def format_entry_for_markdown(text: str) -> str:
+    escaped = text.replace("`", "\\`")
+    if len(escaped) > 200:
+        escaped = escaped[:200] + "…"
+    return escaped
+
+
+def build_duplicate_comment_body(duplicates: List[Duplicate]) -> str:
+    lines = [
+        COMMENT_MARKER,
+        "### :x: Duplicate payload entries found",
+        "",
+        "This PR adds one or more entries that already exist in the repository. "
+        "Please remove the duplicate(s) below, or explain in the PR description how it's a meaningful variation.",
+        "",
+        "| # | Entry | New location | Already exists at | Type |",
+        "|---|---|---|---|---|",
+    ]
+    for idx, dup in enumerate(duplicates, start=1):
+        entry = format_entry_for_markdown(dup.entry)
+        lines.append(
+            f"| {idx} | `{entry}` | `{dup.new.path}:{dup.new.line}` "
+            f"| `{dup.existing.path}:{dup.existing.line}` | {dup.kind} |"
+        )
+    lines.append("")
+    lines.append("_Posted automatically by the Duplicate Payload Check workflow._")
+    return "\n".join(lines)
+
+
+def build_success_comment_body(checked_count: int) -> str:
+    return (
+        f"{COMMENT_MARKER}\n"
+        "### :white_check_mark: No duplicate payload entries detected\n\n"
+        f"Checked {checked_count} normalized entries from added/modified payload files on the latest push.\n\n"
+        "_Posted automatically by the Duplicate Payload Check workflow._"
+    )
+
+
+def find_bot_comment_id(api_base: str, owner_repo: str, pr_number: int, token: str) -> Optional[int]:
+    url = f"{api_base}/repos/{owner_repo}/issues/{pr_number}/comments"
+    for comment in paginated_request(url, token):
+        if COMMENT_MARKER in comment.get("body", ""):
+            return comment.get("id")
+    return None
+
+
+def upsert_pr_comment(api_base: str, owner_repo: str, pr_number: int, token: str, body: str) -> None:
+    try:
+        existing_id = find_bot_comment_id(api_base, owner_repo, pr_number, token)
+        if existing_id:
+            url = f"{api_base}/repos/{owner_repo}/issues/comments/{existing_id}"
+            api_mutate_request(url, token, "PATCH", {"body": body})
+        else:
+            url = f"{api_base}/repos/{owner_repo}/issues/{pr_number}/comments"
+            api_mutate_request(url, token, "POST", {"body": body})
+    except GithubApiError as exc:
+        # Never fail the whole check just because commenting failed (e.g. missing
+        # permissions on a fork-originated event) — the job's pass/fail status
+        # from stdout/exit code is still authoritative.
+        print(f"::warning::Could not post PR comment: {exc}")
+
+
+DUPLICATE_LABEL = "duplicate"
+
+
+def set_duplicate_label(api_base: str, owner_repo: str, pr_number: int, token: str, has_duplicates: bool) -> None:
+    """Apply or remove the 'duplicate' label based on actual detection results.
+
+    This is the only place that touches the 'duplicate' label — it is never
+    inferred from changed file paths (see .github/labeler.yml).
+    """
+    try:
+        if has_duplicates:
+            url = f"{api_base}/repos/{owner_repo}/issues/{pr_number}/labels"
+            api_mutate_request(url, token, "POST", {"labels": [DUPLICATE_LABEL]})
+        else:
+            url = f"{api_base}/repos/{owner_repo}/issues/{pr_number}/labels/{DUPLICATE_LABEL}"
+            try:
+                api_mutate_request(url, token, "DELETE", {})
+            except GithubApiError as exc:
+                if exc.status_code != 404:  # 404 just means it wasn't set — fine
+                    raise
+    except GithubApiError as exc:
+        print(f"::warning::Could not update '{DUPLICATE_LABEL}' label: {exc}")
+
+
 def main() -> int:
     token = os.environ.get("GITHUB_TOKEN")
     repository = os.environ.get("GITHUB_REPOSITORY")
@@ -413,10 +527,22 @@ def main() -> int:
 
     if duplicates:
         print_duplicates(duplicates)
+        upsert_pr_comment(
+            api_base, repository, int(pr_number), token, build_duplicate_comment_body(duplicates)
+        )
+        set_duplicate_label(api_base, repository, int(pr_number), token, has_duplicates=True)
         return 1
 
     print("No duplicate payload/content entries were detected in PR additions/changes.")
     print(f"Checked {len(candidates)} normalized entries from added/modified files.")
+    upsert_pr_comment(
+        api_base,
+        repository,
+        int(pr_number),
+        token,
+        build_success_comment_body(len(candidates)),
+    )
+    set_duplicate_label(api_base, repository, int(pr_number), token, has_duplicates=False)
     return 0
 
 
