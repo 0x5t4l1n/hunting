@@ -801,3 +801,22 @@ www.whitelisteddomain.tld%252eⓁ𝐨𝗰𝐀𝕝ⅆ𝓸ⓜₐℹⓃ｡Ｐⓦ
 //Ⓛ𝐨𝗰𝐀𝕝ⅆ𝓸ⓜₐℹⓃ｡Ｐⓦ%23@www.whitelisteddomain.tld
 //www.whitelisteddomain.tld/../..%20.localdomain.pw
 //www.whitelisteddomain.tld/../..%20.Ⓛ𝐨𝗰𝐀𝕝ⅆ𝓸ⓜₐℹⓃ｡Ｐⓦ
+
+# Backslash-as-slash browser normalization bypass
+/\evil.com
+\/evil.com
+/\/evil.com
+
+# Userinfo-style open redirect (browsers treat text before @ as userinfo, not host)
+https://trusted-app.com@evil.com
+http://trusted-app.com:443@evil.com/
+
+# Tab/newline injected before the scheme to slip past naive allowlist regex
+/\t/evil.com
+/\n/evil.com
+
+# Double-encoded path traversal back into an absolute redirect
+/redirect?url=%252e%252e%252fevil.com
+
+# Whitespace-padded scheme confusion
+java\tscript://evil.com
